@@ -12,9 +12,7 @@ app.get('/', (req, res) => {
 
 apiRouter.get('/me', authMiddleware,
     (req, res) => {
-    res.send({
-        user: req.user
+        res.send({
+            user: req.user
+        });
     });
-});
-
-apiRouter.post("/status");

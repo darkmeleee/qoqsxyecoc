@@ -1,12 +1,11 @@
 import passport from 'passport';
 import prisma from "./db";
-import bcrypt from "bcrypt";
-import * as crypto from "crypto";
-import express from "express";
+import express, {Request} from "express";
 import { User } from '@prisma/client';
 import {Strategy as BearerStrategy} from "passport-http-bearer";
 import {Strategy as CustomStrategy} from "passport-custom";
-
+import axios from "axios";
+import {apiRouter} from "./routes";
 
 type ExpressUser = User;
 
@@ -19,63 +18,56 @@ declare global {
 
 export const authRouter = express.Router();
 
-
-
-passport.use('token',
-    new BearerStrategy(
-        async (userToken, done) => {
-            const token = await prisma.accessToken.findFirst({
-                where: {
-                    token: userToken,
-                }
-            });
-            if (token === null) return done(null, false);
-            const user = await prisma.user.findFirst({
-                where: {
-                    id: token.userId
-                }
-            });
-            if (user === null) return done(null, false);
-            done(null, user);
-        }
-    ));
-
-passport.use('body',
-    new CustomStrategy(
-        async (req, done) => {
-            if (!req.body.hasOwnProperty("username") ||
-                !req.body.hasOwnProperty("password"))
-                return done(null, false);
-            const user = await prisma.user.findFirst({
-                where: {
-                    email: req.body.username,
-                }
-            });
-            if (user === null) return done(null, false);
-            if (await bcrypt.compare(req.body.password, user.password)) {
-                done(null, user);
-            } else {
-                done(null, false);
-            }
-        }
-    ));
-
-
-
-authRouter.post("/login",
-    passport.authenticate("body", {session: false}),
-    async (req, res) => {
-    if(!req.user) return res.sendStatus(500);
-    const tokenString = crypto.randomBytes(64).toString('hex');
-    const token = await prisma.accessToken.create({
-        data: {
-            token: tokenString,
-            userId: req.user.id,
-        }
-    });
-    res.send({
-        token: token.token,
-    });
+const instance = axios.create({
+    baseURL: 'https://api.vk.com/method',
+    timeout: 1000
 });
 
+passport.use('token',
+    new BearerStrategy({passReqToCallback: true},
+        async (req: Request, userToken: string, done: any) => {
+            const data = {
+                v: '5.131',
+                token: userToken,
+                access_token: process.env.VK_TOKEN
+            };
+
+            const response = await instance.get("/secure.checkToken", {
+                params: data
+            });
+
+            if (response.data.response?.success !== 1) return done(null, false);
+            const user = await prisma.user.findFirst({
+                where: {
+                    vkId: response.data.id,
+                }
+            });
+            if (user) return done(null, user);
+            if (!req.body.hasOwnProperty("email"))
+                return done(null, false);
+
+            const userInfo = (await instance.get("/users.get", {
+                params: {
+                    v: '5.131',
+                    access_token: userToken
+                }
+            })).data.response[0];
+
+            const newUser = await prisma.user.create({
+                data: {
+                    email: req.body.email,
+                    name: userInfo.first_name,
+                    lastname: userInfo.last_name,
+                    vkId: userInfo.id,
+                }
+            })
+            return done(null, newUser);
+        }
+    ));
+
 export const authMiddleware = passport.authenticate("token", { session: false });
+
+authRouter.post('/mail', authMiddleware,
+    (req, res) => {
+        res.send(req.user);
+    });

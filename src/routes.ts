@@ -5,6 +5,7 @@ import {authMiddleware, authRouter} from "./auth";
 import passport from "passport";
 
 import cors from "cors";
+import {coursesRouter, publicCoursesRouter} from "./courses";
 
 export const app: Express = express();
 
@@ -16,7 +17,9 @@ const port = process.env.PORT;
 
 export const apiRouter = express.Router();
 
-
+apiRouter.use("/auth", authRouter);
+apiRouter.use("/courses", publicCoursesRouter);
+apiRouter.use("/courses", authMiddleware, coursesRouter);
 app.use("/api", apiRouter);
 
 app.listen(port, () => {
