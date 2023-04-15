@@ -1,7 +1,7 @@
 import passport from 'passport';
 import prisma from "./db";
-import express, {Request} from "express";
-import { User } from '@prisma/client';
+import express, {NextFunction, Request, Response} from "express";
+import {Role, User} from '@prisma/client';
 import {Strategy as BearerStrategy} from "passport-http-bearer";
 import {Strategy as CustomStrategy} from "passport-custom";
 import axios from "axios";
@@ -39,7 +39,7 @@ passport.use('token',
             if (response.data.response?.success !== 1) return done(null, false);
             const user = await prisma.user.findFirst({
                 where: {
-                    vkId: response.data.id,
+                    vkId: response.data.response?.user_id,
                 }
             });
             if (user) return done(null, user);
@@ -49,7 +49,8 @@ passport.use('token',
             const userInfo = (await instance.get("/users.get", {
                 params: {
                     v: '5.131',
-                    access_token: userToken
+                    access_token: userToken,
+                    fields: "photo_50"
                 }
             })).data.response[0];
 
@@ -59,6 +60,7 @@ passport.use('token',
                     name: userInfo.first_name,
                     lastname: userInfo.last_name,
                     vkId: userInfo.id,
+                    avatar: userInfo.photo_50,
                 }
             })
             return done(null, newUser);
@@ -66,6 +68,10 @@ passport.use('token',
     ));
 
 export const authMiddleware = passport.authenticate("token", { session: false });
+export const tutorMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    if(req.user?.role === Role.TUTOR) next();
+    else res.sendStatus(403);
+}
 
 authRouter.post('/mail', authMiddleware,
     (req, res) => {
