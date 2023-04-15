@@ -8,7 +8,7 @@ import cors from "cors";
 import {coursesRouter, publicCoursesRouter} from "./courses";
 import {tutorRouter} from "./tutor";
 import {profileRouter} from "./profile";
-import {docsRouter} from "./docs";
+import {docsPublicRouter, docsRouter} from "./docs";
 
 export const app: Express = express();
 
@@ -21,11 +21,17 @@ const port = process.env.PORT;
 export const apiRouter = express.Router();
 
 apiRouter.use("/auth", authRouter);
+
+publicCoursesRouter.use("/", authMiddleware, coursesRouter);
 apiRouter.use("/courses", publicCoursesRouter);
-apiRouter.use("/courses", authMiddleware, coursesRouter);
+
 apiRouter.use("/profile", authMiddleware, profileRouter);
-apiRouter.use("/docs", authMiddleware, docsRouter);
+
+docsPublicRouter.use("/", authMiddleware, docsRouter);
+apiRouter.use("/docs", docsPublicRouter);
+
 coursesRouter.use("/tutor", tutorMiddleware, tutorRouter);
+
 app.use("/api", apiRouter);
 
 app.listen(port, () => {

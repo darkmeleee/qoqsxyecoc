@@ -1,6 +1,5 @@
 import express from "express";
 import prisma from "./db";
-import {tutorMiddleware} from "./auth";
 
 export const coursesRouter = express.Router();
 export const publicCoursesRouter = express.Router();

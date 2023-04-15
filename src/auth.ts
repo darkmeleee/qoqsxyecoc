@@ -3,9 +3,7 @@ import prisma from "./db";
 import express, {NextFunction, Request, Response} from "express";
 import {Role, User} from '@prisma/client';
 import {Strategy as BearerStrategy} from "passport-http-bearer";
-import {Strategy as CustomStrategy} from "passport-custom";
 import axios from "axios";
-import {apiRouter} from "./routes";
 
 type ExpressUser = User;
 
@@ -14,7 +12,6 @@ declare global {
         interface User extends ExpressUser {}
     }
 }
-
 
 export const authRouter = express.Router();
 

@@ -13,18 +13,19 @@ enum Role {
 }
 
 model User {
-  id            Int           @id @unique @default(autoincrement())
-  email         String        @unique
+  id            Int              @id @unique @default(autoincrement())
+  email         String           @unique
   birthdate     DateTime?
   name          String
   lastname      String
   surname       String?
   accessTokens  AccessToken[]
   courses       Course[]
-  queuedCourses Course[]      @relation("queued")
-  vkId          Int           @unique
-  role          Role          @default(STUDENT)
-  avatar        String        @default("https://vk.com/images/camera_50.png")
+  queuedCourses Course[]         @relation("queued")
+  vkId          Int              @unique
+  role          Role             @default(STUDENT)
+  avatar        String           @default("https://vk.com/images/camera_50.png")
+  documents     DocumentUpload[]
 }
 
 model AccessToken {
@@ -34,6 +35,16 @@ model AccessToken {
   userId Int
 }
 
+model DocumentUpload {
+  id       Int    @id @unique @default(autoincrement())
+  user     User   @relation(fields: [userId], references: [id])
+  course   Course @relation(fields: [courseId], references: [id])
+  name     String
+  key      String
+  userId   Int
+  courseId Int
+}
+
 enum Icon {
   PROJECTS
   PROGRAMMING
@@ -41,15 +52,17 @@ enum Icon {
 }
 
 model Course {
-  id          Int    @id @unique @default(autoincrement())
-  name        String
-  people      Int
-  description String
-  tutor       String
-  age         String @default("14-18 лет")
-  place       String
-  icon        Icon   @default(PROJECTS)
-  users       User[]
-  queuedUsers User[] @relation("queued")
-  schedule    String @default("Понедельник, среда, пятница - 15:00")
+  id                Int              @id @unique @default(autoincrement())
+  name              String
+  people            Int
+  description       String
+  tutor             String
+  age               String           @default("14-18 лет")
+  place             String
+  icon              Icon             @default(PROJECTS)
+  users             User[]
+  queuedUsers       User[]           @relation("queued")
+  schedule          String           @default("Понедельник, среда, пятница - 15:00")
+  requiredDocuments String[]         @default(["Согласие на обработку персональных данных"])
+  documents         DocumentUpload[]
 }
