@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "Icon" AS ENUM ('PROJECTS', 'PROGRAMMING', 'MODELLING');
+
+-- AlterTable
+ALTER TABLE "Course" ADD COLUMN     "icon" "Icon" NOT NULL DEFAULT 'PROJECTS';
