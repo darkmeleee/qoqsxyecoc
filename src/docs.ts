@@ -34,7 +34,7 @@ docsRouter.post("/upload", upload.single('file'), async (req, res) => {
     if (!course) return res.status(404).send({error: "course not found"});
     if (!course.requiredDocuments.includes(req.body.name)) return res.status(400).send({error: "unknown document passed"});
 
-    const key = `${req.user?.lastname}_${req.user?.name}_${req.body.name}${path.extname(req.file.originalname)}`;
+    const key = `${course.name}/${req.user?.lastname}_${req.user?.name}_${req.body.name}${path.extname(req.file.originalname)}`;
 
     await s3.putObject("docs", key, req.file.buffer);
     await prisma.documentUpload.deleteMany({
