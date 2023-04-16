@@ -8,6 +8,7 @@ tutorRouter.post("/new", async (req, res) => {
         !req.body.hasOwnProperty("description") ||
         !req.body.hasOwnProperty("tutor") ||
         !req.body.hasOwnProperty("place") ||
+        !req.body.hasOwnProperty("schedule") ||
         !req.body.hasOwnProperty("requiredDocuments"))
         return res.status(400).send({error: "course params not specified"});
     const course = {
@@ -17,6 +18,7 @@ tutorRouter.post("/new", async (req, res) => {
         tutor: req.body.tutor,
         place: req.body.place,
         age: req.body.age,
+        schedule: req.body.schedule,
         requiredDocuments: req.body.requiredDocuments,
     };
     const newCourse = await prisma.course.create({

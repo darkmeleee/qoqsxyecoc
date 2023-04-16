@@ -8,6 +8,9 @@ publicCoursesRouter.get("/", async (req, res) => {
         include: {
             users: true,
             queuedUsers: true,
+        },
+        orderBy: {
+            id: 'asc'
         }
     });
     res.send(courses);
@@ -21,21 +24,35 @@ publicCoursesRouter.get("/course/:id", async (req, res) => {
             id: parseInt(req.params.id),
         },
     });
-    const user = await prisma.user.count({
-        where: {
-            id: req.user?.id,
-            courses: {
-                some: {
-                    id: parseInt(req.params.id),
+    let attending = 0;
+    let queued = 0;
+    if (typeof req.query.user === "string" && !isNaN(parseInt(req.query.user))) {
+        attending = await prisma.user.count({
+            where: {
+                id: parseInt(req.query.user),
+                courses: {
+                    some: {
+                        id: parseInt(req.params.id),
+                    }
                 }
             }
-        }
-    });
+        });
+        queued = await prisma.user.count({
+            where: {
+                id: parseInt(req.query.user),
+                queuedCourses: {
+                    some: {
+                        id: parseInt(req.params.id),
+                    }
+                }
+            }
+        });
+    }
 
     if (course === null) {
         return res.status(404).send({error: "course not found"});
     }
-    res.send({...course, attending: user > 0});
+    res.send({...course, attending: attending > 0, queued: queued > 0});
 });
 
 coursesRouter.get("/attending", async (req, res) => {
@@ -44,7 +61,12 @@ coursesRouter.get("/attending", async (req, res) => {
             id: req.user?.id
         },
         include: {
-            courses: true,
+            courses: {
+                include: {
+                    users: true,
+                    queuedUsers: true,
+                }
+            },
         }
     });
     res.send(me?.courses);
